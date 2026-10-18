@@ -152,7 +152,10 @@
 
         <!-- 📜 SECCIÓN 5: HISTORIAL DE MOVIMIENTOS -->
         <section id="tab-historial" class="tab-content space-y-4">
-            <h2 class="text-xl font-bold text-slate-100">Historial de Movimientos 📜</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-100">Historial de Movimientos 📜</h2>
+                <button onclick="limpiarHistorial()" class="text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2 py-1 rounded text-xs">Vaciar</button>
+            </div>
             <div id="lista-historial" class="space-y-2 max-h-96 overflow-y-auto pr-1">
                 <!-- Se genera dinámicamente -->
             </div>
@@ -198,7 +201,6 @@
 
         let hoyFechaClave = new Date().toISOString().split('T')[0];
 
-        // Cargar datos asegurando múltiples productos iniciales
         let datosApp = JSON.parse(localStorage.getItem(`ag_microapps_${usuarioId}`)) || {
             tasa: 1000.00,
             caja: 100.00,
@@ -220,7 +222,6 @@
             ]
         };
 
-        // Si el usuario tenía una versión vieja con solo 1 producto, le reponemos los demás automáticamente
         if(datosApp.inventario.length === 1 && datosApp.inventario[0].nombre === 'Cloro') {
             datosApp.inventario.push(
                 { id: 2, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
@@ -228,7 +229,6 @@
             );
         }
 
-        // Reiniciar ventas de hoy si es un nuevo día
         if(datosApp.ultimaFechaVenta !== hoyFechaClave) {
             datosApp.ventasHoy = 0.00;
             datosApp.ultimaFechaVenta = hoyFechaClave;
@@ -243,9 +243,18 @@
 
         function registrarHistorial(descripcion) {
             let hora = new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'});
+            if(!datosApp.historial) datosApp.historial = [];
             datosApp.historial.unshift({ fecha: hora, desc: descripcion });
             if(datosApp.historial.length > 50) datosApp.historial.pop();
             guardarDatos();
+        }
+
+        function limpiarHistorial() {
+            if(confirm("¿Deseas vaciar el historial de movimientos?")) {
+                datosApp.historial = [{ fecha: new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'}), desc: 'Historial reiniciado.' }];
+                guardarDatos();
+                renderizarVistas();
+            }
         }
 
         function actualizarTasa(nuevaTasa) {
@@ -290,7 +299,6 @@
             document.getElementById('dash-balance-bs').innerText = `Bs. ${(balanceNeto * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
         }
 
-        // Registrar Venta mostrando TODOS los productos disponibles
         function registrarNuevaVenta() {
             if(datosApp.inventario.length === 0) {
                 alert("Primero debes agregar productos en el Inventario.");
@@ -324,12 +332,13 @@
                 return;
             }
 
-            // Operaciones
+            // Realizar venta
             let totalVenta = cant * prod.precio;
-            prod.stock -= cant; // Resta stock
-            datosApp.caja += totalVenta; // Suma dinero a caja
-            datosApp.ventasHoy += totalVenta; // Suma a ventas de hoy
+            prod.stock -= cant;
+            datosApp.caja += totalVenta;
+            datosApp.ventasHoy += totalVenta;
 
+            // Registrar en historial y guardar
             registrarHistorial(`🛒 VENTA: ${cant}x ${prod.nombre} = $${totalVenta.toFixed(2)} (Bs. ${(totalVenta * datosApp.tasa).toFixed(2)})`);
             renderizarVistas();
             alert(`✅ Venta registrada con éxito:\n$${totalVenta.toFixed(2)} / Bs. ${(totalVenta * datosApp.tasa).toFixed(2)}\n\nStock de ${prod.nombre} actualizado a: ${prod.stock}`);
@@ -443,18 +452,21 @@
 
             // Render Historial
             let htmlHistorial = '';
-            datosApp.historial.forEach(h => {
-                htmlHistorial += `
-                    <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50 flex justify-between text-xs">
-                        <span class="text-slate-300">${h.desc}</span>
-                        <span class="text-slate-500 font-mono text-[10px]">${h.fecha}</span>
-                    </div>
-                `;
-            });
+            if (datosApp.historial && datosApp.historial.length > 0) {
+                datosApp.historial.forEach(h => {
+                    htmlHistorial += `
+                        <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50 flex justify-between items-center text-xs">
+                            <span class="text-slate-200 font-medium">${h.desc}</span>
+                            <span class="text-slate-400 font-mono text-[10px] ml-2 shrink-0">${h.fecha}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                htmlHistorial = '<p class="text-xs text-slate-400 text-center py-4">No hay movimientos registrados hoy.</p>';
+            }
             document.getElementById('lista-historial').innerHTML = htmlHistorial;
         }
 
-        // Acciones de Productos
         function editarStockDirecto(id) {
             let prod = datosApp.inventario.find(p => p.id === id);
             if(prod) {
