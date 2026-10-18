@@ -43,7 +43,7 @@
                 <label class="text-[10px] text-slate-400 font-semibold uppercase">Tasa $ / Bs.</label>
                 <div class="flex items-center space-x-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5 mt-0.5">
                     <span class="text-xs font-bold text-amber-400">Bs.</span>
-                    <input type="number" id="tasa-cambio" value="60.00" step="0.1" onchange="actualizarTasa(this.value)" class="w-16 bg-transparent text-right text-xs font-bold text-white focus:outline-none">
+                    <input type="number" id="tasa-cambio" value="890.00" step="0.1" onchange="actualizarTasa(this.value)" class="w-16 bg-transparent text-right text-xs font-bold text-white focus:outline-none">
                 </div>
             </div>
         </div>
@@ -66,7 +66,7 @@
                     <p id="dash-caja-bs" class="text-[11px] text-slate-400 font-medium">Bs. 0.00</p>
                 </div>
                 <div class="bg-cardBg p-3.5 rounded-xl border border-slate-700 shadow">
-                    <p class="text-xs text-slate-400">Valor Inventario</p>
+                    <p class="text-xs text-slate-400">Inversión Inventario</p>
                     <p id="dash-inventario" class="text-lg font-bold text-cyan-400">$0.00</p>
                     <p id="dash-inventario-bs" class="text-[11px] text-slate-400 font-medium">Bs. 0.00</p>
                 </div>
@@ -186,11 +186,12 @@
 
         // Datos en LocalStorage
         let datosApp = JSON.parse(localStorage.getItem(`ag_microapps_${usuarioId}`)) || {
-            tasa: 60.00,
+            tasa: 890.00,
             caja: 100.00,
             inventario: [
-                { id: 1, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
-                { id: 2, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
+                { id: 1, nombre: 'Cloro', stock: 100, costo: 1.00, precio: 1.50 },
+                { id: 2, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
+                { id: 3, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
             ],
             porCobrar: [
                 { id: 1, cliente: 'María Rodríguez', telefono: '584240000000', concepto: '2 Tazas Personalizadas', monto: 10.00, abonado: 3.00 }
@@ -203,7 +204,7 @@
             ]
         };
 
-        document.getElementById('tasa-cambio').value = datosApp.tasa || 60.00;
+        document.getElementById('tasa-cambio').value = datosApp.tasa || 890.00;
 
         function guardarDatos() {
             localStorage.setItem(`ag_microapps_${usuarioId}`, JSON.stringify(datosApp));
@@ -259,23 +260,47 @@
             actualizarDashboard();
             let tasa = datosApp.tasa;
 
-            // Render Inventario Limpio con Eliminar y Editar Stock
+            // Render Inventario con Inversión, Venta Total y Ganancia Est.
             let filtroInv = document.getElementById('buscar-inventario').value.toLowerCase();
             let htmlInv = '';
             datosApp.inventario.filter(p => p.nombre.toLowerCase().includes(filtroInv)).forEach(item => {
                 let stockAlerta = item.stock <= 3 ? 'border-rose-500/80 bg-rose-500/10' : 'border-slate-700 bg-cardBg';
+                
+                let inversionTotal = item.stock * item.costo;
+                let ventaTotal = item.stock * item.precio;
+                let gananciaProyectada = ventaTotal - inversionTotal;
                 let precioBs = (item.precio * tasa).toFixed(2);
+                let gananciaBs = (gananciaProyectada * tasa).toFixed(2);
+
                 htmlInv += `
-                    <div class="p-3.5 rounded-xl border ${stockAlerta} flex justify-between items-center shadow">
-                        <div class="space-y-1">
-                            <h3 class="font-bold text-xs text-slate-100">${item.nombre}</h3>
-                            <p class="text-[11px] text-slate-400">Stock: <button onclick="editarStockDirecto(${item.id})" class="font-bold text-white bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-xs hover:border-emerald-500">${item.stock} ✏️</button> | Costo: $${item.costo.toFixed(2)}</p>
-                            <p class="text-xs font-semibold text-emerald-400">$${item.precio.toFixed(2)} <span class="text-[10px] text-slate-400">(Bs. ${precioBs})</span></p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="eliminarProducto(${item.id})" class="bg-rose-500/20 hover:bg-rose-500 border border-rose-500/40 text-rose-400 hover:text-white p-2 rounded-lg text-xs transition" title="Eliminar producto">
+                    <div class="p-3.5 rounded-xl border ${stockAlerta} space-y-2 shadow">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-sm text-slate-100">${item.nombre}</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">
+                                    Stock: <button onclick="editarStockDirecto(${item.id})" class="font-bold text-white bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-xs hover:border-emerald-500">${item.stock} ✏️</button> 
+                                    | Costo Un.: <span class="text-slate-300 font-medium">$${item.costo.toFixed(2)}</span>
+                                </p>
+                            </div>
+                            <button onclick="eliminarProducto(${item.id})" class="bg-rose-500/20 hover:bg-rose-500 border border-rose-500/40 text-rose-400 hover:text-white p-1.5 rounded-lg text-xs transition" title="Eliminar producto">
                                 🗑️
                             </button>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-700/60 grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <p class="text-[10px] text-slate-400">Inversión Total:</p>
+                                <p class="font-bold text-cyan-400">$${inversionTotal.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-slate-400">Venta Total Est.:</p>
+                                <p class="font-bold text-emerald-400">$${ventaTotal.toFixed(2)} <span class="text-[9px] text-slate-400">(Bs. ${(ventaTotal * tasa).toFixed(0)})</span></p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/80 p-2 rounded-lg border border-emerald-500/30 flex justify-between items-center text-xs mt-1">
+                            <span class="text-emerald-400 font-semibold text-[11px]">📈 Ganancia Est.:</span>
+                            <span class="font-black text-emerald-300">$${gananciaProyectada.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal">(Bs. ${gananciaBs})</span></span>
                         </div>
                     </div>
                 `;
@@ -366,11 +391,11 @@
         }
 
         function abrirModalProducto() {
-            let nombre = prompt("Nombre del producto:");
+            let nombre = prompt("Nombre del producto (ej: Cloro 100L):");
             if(!nombre) return;
-            let stock = parseInt(prompt("Cantidad en inventario:", "10")) || 0;
-            let costo = parseFloat(prompt("Costo unitario ($):", "2.00")) || 0;
-            let precio = parseFloat(prompt("Precio de venta ($):", "5.00")) || 0;
+            let stock = parseInt(prompt("Cantidad en inventario (unidades/litros):", "100")) || 0;
+            let costo = parseFloat(prompt("Costo unitario ($):", "1.00")) || 0;
+            let precio = parseFloat(prompt("Precio de venta ($):", "1.50")) || 0;
 
             datosApp.inventario.push({ id: Date.now(), nombre, stock, costo, precio });
             registrarHistorial(`Nuevo producto agregado: ${nombre}`);
