@@ -59,6 +59,18 @@
                 <span id="fecha-hoy" class="text-xs text-slate-400 font-medium"></span>
             </div>
             
+            <!-- Ventas de Hoy Destacado -->
+            <div class="bg-gradient-to-r from-emerald-900/60 to-teal-900/60 p-4 rounded-xl border border-emerald-500/40 shadow-lg flex justify-between items-center">
+                <div>
+                    <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">🛒 Ventas Realizadas Hoy</p>
+                    <p id="dash-ventas-hoy" class="text-2xl font-black text-white mt-0.5">$0.00</p>
+                    <p id="dash-ventas-hoy-bs" class="text-xs text-slate-300 font-medium">Bs. 0.00</p>
+                </div>
+                <button onclick="registrarNuevaVenta()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-3.5 py-2 rounded-lg text-xs shadow-md transition">
+                    ⚡ Registrar Venta
+                </button>
+            </div>
+
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-cardBg p-3.5 rounded-xl border border-slate-700 shadow">
                     <p class="text-xs text-slate-400">Caja / Efectivo</p>
@@ -184,10 +196,14 @@
         document.getElementById('user-info').innerText = `Hola, ${nombreUsuario}`;
         document.getElementById('fecha-hoy').innerText = new Date().toLocaleDateString('es-VE');
 
+        let hoyFechaClave = new Date().toISOString().split('T')[0];
+
         // Datos en LocalStorage
         let datosApp = JSON.parse(localStorage.getItem(`ag_microapps_${usuarioId}`)) || {
             tasa: 1000.00,
             caja: 100.00,
+            ventasHoy: 0.00,
+            ultimaFechaVenta: hoyFechaClave,
             inventario: [
                 { id: 1, nombre: 'Cloro', stock: 100, costo: 1.00, precio: 1.30 }
             ],
@@ -201,6 +217,12 @@
                 { fecha: new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'}), desc: 'Sistema iniciado correctamente.' }
             ]
         };
+
+        // Reiniciar ventas de hoy si es un nuevo día
+        if(datosApp.ultimaFechaVenta !== hoyFechaClave) {
+            datosApp.ventasHoy = 0.00;
+            datosApp.ultimaFechaVenta = hoyFechaClave;
+        }
 
         document.getElementById('tasa-cambio').value = datosApp.tasa || 1000.00;
 
@@ -239,6 +261,10 @@
             let totalPagar = datosApp.porPagar.filter(p => p.estado === 'Pendiente').reduce((acc, item) => acc + item.monto, 0);
             let balanceNeto = (datosApp.caja + totalInventario + totalCobrar) - totalPagar;
 
+            // Ventas de Hoy
+            document.getElementById('dash-ventas-hoy').innerText = `$${datosApp.ventasHoy.toFixed(2)}`;
+            document.getElementById('dash-ventas-hoy-bs').innerText = `Bs. ${(datosApp.ventasHoy * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+
             // Valores en USD
             document.getElementById('dash-caja').innerText = `$${datosApp.caja.toFixed(2)}`;
             document.getElementById('dash-inventario').innerText = `$${totalInventario.toFixed(2)}`;
@@ -252,6 +278,51 @@
             document.getElementById('dash-cobrar-bs').innerText = `Bs. ${(totalCobrar * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
             document.getElementById('dash-pagar-bs').innerText = `Bs. ${(totalPagar * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
             document.getElementById('dash-balance-bs').innerText = `Bs. ${(balanceNeto * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+        }
+
+        // Nueva función: Registrar Venta y Descontar Stock
+        function registrarNuevaVenta() {
+            if(datosApp.inventario.length === 0) {
+                alert("Primero debes agregar productos en el Inventario.");
+                return;
+            }
+
+            let lista = "Selecciona un producto por número:\n";
+            datosApp.inventario.forEach((prod, index) => {
+                lista += `${index + 1}. ${prod.nombre} (Stock: ${prod.stock} | $${prod.precio.toFixed(2)})\n`;
+            });
+
+            let seleccion = prompt(lista);
+            if(!seleccion) return;
+
+            let indexProd = parseInt(seleccion) - 1;
+            let prod = datosApp.inventario[indexProd];
+
+            if(!prod) {
+                alert("Selección inválida.");
+                return;
+            }
+
+            let cantStr = prompt(`¿Cuántas unidades de "${prod.nombre}" vendiste? (Stock disponible: ${prod.stock}):`, "1");
+            if(!cantStr) return;
+            let cant = parseInt(cantStr) || 0;
+
+            if(cant <= 0) return;
+
+            if(cant > prod.stock) {
+                alert(`No tienes suficiente stock. Solo te quedan ${prod.stock} unidades.`);
+                return;
+            }
+
+            // Operaciones
+            let totalVenta = cant * prod.precio;
+            prod.stock -= cant; // Resta stock
+            datosApp.caja += totalVenta; // Suma dinero a caja
+            datosApp.ventasHoy += totalVenta; // Suma a ventas de hoy
+
+            registrarHistorial(`🛒 VENTA: ${cant}x ${prod.nombre} = $${totalVenta.toFixed(2)} (Bs. ${(totalVenta * datosApp.tasa).toFixed(2)})`);
+            renderizarVistas();
+            alert(`✅ Venta registrada con éxito:\n$${totalVenta.toFixed(2)} / Bs. ${(totalVenta * datosApp.tasa).toFixed(2)}\n\nStock de ${prod.nombre} actualizado a: ${prod.stock}`);
         }
 
         function renderizarVistas() {
