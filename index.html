@@ -198,14 +198,16 @@
 
         let hoyFechaClave = new Date().toISOString().split('T')[0];
 
-        // Datos en LocalStorage
+        // Cargar datos asegurando múltiples productos iniciales
         let datosApp = JSON.parse(localStorage.getItem(`ag_microapps_${usuarioId}`)) || {
             tasa: 1000.00,
             caja: 100.00,
             ventasHoy: 0.00,
             ultimaFechaVenta: hoyFechaClave,
             inventario: [
-                { id: 1, nombre: 'Cloro', stock: 100, costo: 1.00, precio: 1.30 }
+                { id: 1, nombre: 'Cloro', stock: 100, costo: 1.00, precio: 1.30 },
+                { id: 2, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
+                { id: 3, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
             ],
             porCobrar: [
                 { id: 1, cliente: 'María Rodríguez', telefono: '584240000000', concepto: '2 Tazas Personalizadas', monto: 10.00, abonado: 3.00 }
@@ -217,6 +219,14 @@
                 { fecha: new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'}), desc: 'Sistema iniciado correctamente.' }
             ]
         };
+
+        // Si el usuario tenía una versión vieja con solo 1 producto, le reponemos los demás automáticamente
+        if(datosApp.inventario.length === 1 && datosApp.inventario[0].nombre === 'Cloro') {
+            datosApp.inventario.push(
+                { id: 2, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
+                { id: 3, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
+            );
+        }
 
         // Reiniciar ventas de hoy si es un nuevo día
         if(datosApp.ultimaFechaVenta !== hoyFechaClave) {
@@ -280,14 +290,14 @@
             document.getElementById('dash-balance-bs').innerText = `Bs. ${(balanceNeto * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
         }
 
-        // Nueva función: Registrar Venta y Descontar Stock
+        // Registrar Venta mostrando TODOS los productos disponibles
         function registrarNuevaVenta() {
             if(datosApp.inventario.length === 0) {
                 alert("Primero debes agregar productos en el Inventario.");
                 return;
             }
 
-            let lista = "Selecciona un producto por número:\n";
+            let lista = "Selecciona un producto por número:\n\n";
             datosApp.inventario.forEach((prod, index) => {
                 lista += `${index + 1}. ${prod.nombre} (Stock: ${prod.stock} | $${prod.precio.toFixed(2)})\n`;
             });
@@ -299,7 +309,7 @@
             let prod = datosApp.inventario[indexProd];
 
             if(!prod) {
-                alert("Selección inválida.");
+                alert("Número de producto inválido.");
                 return;
             }
 
@@ -468,11 +478,11 @@
         }
 
         function abrirModalProducto() {
-            let nombre = prompt("Nombre del producto (ej: Cloro):");
+            let nombre = prompt("Nombre del producto (ej: Franela Sublimada):");
             if(!nombre) return;
-            let stock = parseInt(prompt("Cantidad en inventario (unidades/litros):", "100")) || 0;
-            let costo = parseFloat(prompt("Costo unitario ($):", "1.00")) || 0;
-            let precio = parseFloat(prompt("Precio de venta ($):", "1.30")) || 0;
+            let stock = parseInt(prompt("Cantidad en inventario:", "10")) || 0;
+            let costo = parseFloat(prompt("Costo unitario ($):", "2.00")) || 0;
+            let precio = parseFloat(prompt("Precio de venta ($):", "5.00")) || 0;
 
             datosApp.inventario.push({ id: Date.now(), nombre, stock, costo, precio });
             registrarHistorial(`Nuevo producto agregado: ${nombre}`);
