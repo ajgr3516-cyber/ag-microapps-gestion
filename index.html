@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AG MicroApps - Gestión Total</title>
+    <!-- Telegram Web App Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                        accentGreen: '#10b981',
+                        accentBlue: '#3b82f6',
+                        neonGlow: '#00f2fe'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <!-- Header / Branding -->
+    <header class="bg-cardBg border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
+        <div class="flex justify-between items-center max-w-md mx-auto">
+            <div>
+                <h1 class="text-lg font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">AG MicroApps</h1>
+                <p id="user-info" class="text-xs text-slate-400">Sistema de Gestión Comercial</p>
+            </div>
+            <div id="license-badge" class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
+                Licencia Activa
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-md mx-auto p-4 space-y-6">
+
+        <!-- 📊 SECCIÓN: INICIO / DASHBOARD -->
+        <section id="tab-inicio" class="tab-content active space-y-4">
+            <h2 class="text-xl font-bold text-slate-100">Resumen Financiero 📈</h2>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-cardBg p-4 rounded-xl border border-slate-700 shadow">
+                    <p class="text-xs text-slate-400">Caja / Efectivo</p>
+                    <p id="dash-caja" class="text-xl font-bold text-emerald-400">$0.00</p>
+                </div>
+                <div class="bg-cardBg p-4 rounded-xl border border-slate-700 shadow">
+                    <p class="text-xs text-slate-400">Valor Inventario</p>
+                    <p id="dash-inventario" class="text-xl font-bold text-cyan-400">$0.00</p>
+                </div>
+                <div class="bg-cardBg p-4 rounded-xl border border-slate-700 shadow">
+                    <p class="text-xs text-slate-400">Por Cobrar (Fiados)</p>
+                    <p id="dash-cobrar" class="text-xl font-bold text-amber-400">$0.00</p>
+                </div>
+                <div class="bg-cardBg p-4 rounded-xl border border-slate-700 shadow">
+                    <p class="text-xs text-slate-400">Por Pagar (Deudas)</p>
+                    <p id="dash-pagar" class="text-xl font-bold text-rose-400">$0.00</p>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-5 rounded-xl border border-slate-700 shadow-lg text-center">
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Balance Neto Real</p>
+                <p id="dash-balance" class="text-3xl font-black text-white mt-1">$0.00</p>
+            </div>
+        </section>
+
+        <!-- 📦 SECCIÓN: INVENTARIO -->
+        <section id="tab-inventario" class="tab-content space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-100">Control de Inventario</h2>
+                <button onclick="abrirModalProducto()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm transition">
+                    + Nuevo Producto
+                </button>
+            </div>
+
+            <div id="lista-inventario" class="space-y-3">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </section>
+
+        <!-- 💵 SECCIÓN: CUENTAS POR COBRAR -->
+        <section id="tab-cobrar" class="tab-content space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-100">Cuentas por Cobrar (Fiados)</h2>
+                <button onclick="abrirModalCobro()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm transition">
+                    + Registrar Fiado
+                </button>
+            </div>
+
+            <div id="lista-cobrar" class="space-y-3">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </section>
+
+        <!-- 💸 SECCIÓN: CUENTAS POR PAGAR -->
+        <section id="tab-pagar" class="tab-content space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-100">Cuentas por Pagar</h2>
+                <button onclick="abrirModalPago()" class="bg-rose-500 hover:bg-rose-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm transition">
+                    + Nueva Deuda
+                </button>
+            </div>
+
+            <div id="lista-pagar" class="space-y-3">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Navigation Bar (Bottom) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-cardBg border-t border-slate-700 py-2 px-4 shadow-lg z-50">
+        <div class="max-w-md mx-auto flex justify-around">
+            <button onclick="cambiarTab('inicio')" id="btn-inicio" class="flex flex-col items-center text-emerald-400 text-xs font-medium space-y-1">
+                <span class="text-xl">📊</span> Inicio
+            </button>
+            <button onclick="cambiarTab('inventario')" id="btn-inventario" class="flex flex-col items-center text-slate-400 text-xs font-medium space-y-1">
+                <span class="text-xl">📦</span> Inventario
+            </button>
+            <button onclick="cambiarTab('cobrar')" id="btn-cobrar" class="flex flex-col items-center text-slate-400 text-xs font-medium space-y-1">
+                <span class="text-xl">💵</span> Por Cobrar
+            </button>
+            <button onclick="cambiarTab('pagar')" id="btn-pagar" class="flex flex-col items-center text-slate-400 text-xs font-medium space-y-1">
+                <span class="text-xl">💸</span> Por Pagar
+            </button>
+        </div>
+    </nav>
+
+    <!-- Scripts de Lógica y Control -->
+    <script>
+        // Inicializar Telegram WebApp
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let usuarioId = tg.initDataUnsafe?.user?.id || 'demo_user';
+        let nombreUsuario = tg.initDataUnsafe?.user?.first_name || 'Emprendedor';
+        document.getElementById('user-info').innerText = `Hola, ${nombreUsuario}`;
+
+        // Base de datos local (Simulada, lista para conectar con Supabase)
+        let datosApp = JSON.parse(localStorage.getItem(`ag_microapps_${usuarioId}`)) || {
+            inventario: [
+                { id: 1, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
+                { id: 2, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
+            ],
+            porCobrar: [
+                { id: 1, cliente: 'Carlos Pérez', telefono: '584240000000', concepto: '2 Franelas', monto: 14.00, abonado: 4.00 }
+            ],
+            porPagar: [
+                { id: 1, proveedor: 'Insumos Textil C.A.', concepto: 'Rollo de Tela', monto: 45.00, estado: 'Pendiente' }
+            ],
+            caja: 120.00
+        };
+
+        function guardarDatos() {
+            localStorage.setItem(`ag_microapps_${usuarioId}`, JSON.stringify(datosApp));
+            actualizarDashboard();
+        }
+
+        // Navegación por pestañas
+        function cambiarTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => el.className = "flex flex-col items-center text-slate-400 text-xs font-medium space-y-1");
+
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`btn-${tab}`).className = "flex flex-col items-center text-emerald-400 text-xs font-medium space-y-1";
+
+            renderizarVistas();
+        }
+
+        // Renderizar Información en Pantalla
+        function actualizarDashboard() {
+            let totalInventario = datosApp.inventario.reduce((acc, item) => acc + (item.stock * item.costo), 0);
+            let totalCobrar = datosApp.porCobrar.reduce((acc, item) => acc + (item.monto - item.abonado), 0);
+            let totalPagar = datosApp.porPagar.filter(p => p.estado === 'Pendiente').reduce((acc, item) => acc + item.monto, 0);
+            let balanceNeto = (datosApp.caja + totalInventario + totalCobrar) - totalPagar;
+
+            document.getElementById('dash-caja').innerText = `$${datosApp.caja.toFixed(2)}`;
+            document.getElementById('dash-inventario').innerText = `$${totalInventario.toFixed(2)}`;
+            document.getElementById('dash-cobrar').innerText = `$${totalCobrar.toFixed(2)}`;
+            document.getElementById('dash-pagar').innerText = `$${totalPagar.toFixed(2)}`;
+            document.getElementById('dash-balance').innerText = `$${balanceNeto.toFixed(2)}`;
+        }
+
+        function renderizarVistas() {
+            actualizarDashboard();
+
+            // Renderizar Inventario
+            let htmlInv = '';
+            datosApp.inventario.forEach(item => {
+                let stockAlerta = item.stock <= 3 ? 'border-rose-500 bg-rose-500/10' : 'border-slate-700 bg-cardBg';
+                htmlInv += `
+                    <div class="p-3 rounded-xl border ${stockAlerta} flex justify-between items-center shadow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-100">${item.nombre}</h3>
+                            <p class="text-xs text-slate-400">Stock: <span class="font-bold text-white">${item.stock}</span> | Costo: $${item.costo} | Venta: $${item.precio}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="modificarStock(${item.id}, 1)" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-xs font-bold">+</button>
+                            <button onclick="modificarStock(${item.id}, -1)" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-xs font-bold">-</button>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('lista-inventario').innerHTML = htmlInv || '<p class="text-xs text-slate-400 text-center py-4">No hay productos registrados.</p>';
+
+            // Renderizar Cuentas por Cobrar
+            let htmlCobrar = '';
+            datosApp.porCobrar.forEach(item => {
+                let pendiente = item.monto - item.abonado;
+                let mensajeWp = encodeURIComponent(`Hola ${item.cliente}, te escribimos de AG MicroApps para recordarte tu saldo pendiente de $${pendiente.toFixed(2)}. ¡Gracias por tu preferencia!`);
+                htmlCobrar += `
+                    <div class="p-3 rounded-xl border border-slate-700 bg-cardBg space-y-2 shadow">
+                        <div class="flex justify-between">
+                            <h3 class="font-bold text-sm text-slate-100">${item.cliente}</h3>
+                            <span class="text-xs font-bold text-amber-400">Pendiente: $${pendiente.toFixed(2)}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Concepto: ${item.concepto} (Total: $${item.monto} - Abonado: $${item.abonado})</p>
+                        <div class="flex justify-end space-x-2 pt-1">
+                            <a href="https://wa.me/${item.telefono}?text=${mensajeWp}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-semibold">📲 Cobrar por WhatsApp</a>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('lista-cobrar').innerHTML = htmlCobrar || '<p class="text-xs text-slate-400 text-center py-4">No hay cuentas por cobrar.</p>';
+
+            // Renderizar Cuentas por Pagar
+            let htmlPagar = '';
+            datosApp.porPagar.forEach(item => {
+                htmlPagar += `
+                    <div class="p-3 rounded-xl border border-slate-700 bg-cardBg space-y-1 shadow">
+                        <div class="flex justify-between">
+                            <h3 class="font-bold text-sm text-slate-100">${item.proveedor}</h3>
+                            <span class="text-xs font-bold text-rose-400">$${item.monto.toFixed(2)}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Concepto: ${item.concepto}</p>
+                    </div>
+                `;
+            });
+            document.getElementById('lista-pagar').innerHTML = htmlPagar || '<p class="text-xs text-slate-400 text-center py-4">No hay cuentas por pagar.</p>';
+        }
+
+        // Acciones rápidas
+        function modificarStock(id, cantidad) {
+            let prod = datosApp.inventario.find(p => p.id === id);
+            if(prod) {
+                prod.stock += cantidad;
+                if(prod.stock < 0) prod.stock = 0;
+                guardarDatos();
+                renderizarVistas();
+            }
+        }
+
+        function abrirModalProducto() {
+            let nombre = prompt("Nombre del producto o materia prima:");
+            if(!nombre) return;
+            let stock = parseInt(prompt("Cantidad inicial en stock:", "10")) || 0;
+            let costo = parseFloat(prompt("Costo unitario ($):", "2.00")) || 0;
+            let precio = parseFloat(prompt("Precio de venta ($):", "5.00")) || 0;
+
+            datosApp.inventario.push({ id: Date.now(), nombre, stock, costo, precio });
+            guardarDatos();
+            renderizarVistas();
+        }
+
+        function abrirModalCobro() {
+            let cliente = prompt("Nombre del cliente:");
+            if(!cliente) return;
+            let telefono = prompt("Teléfono con código de país (ej: 584249090289):", "58424");
+            let concepto = prompt("Concepto de la venta:", "Productos sublimados");
+            let monto = parseFloat(prompt("Monto total ($):", "10.00")) || 0;
+            let abonado = parseFloat(prompt("¿Cuánto abonó de inicial? ($):", "0")) || 0;
+
+            datosApp.porCobrar.push({ id: Date.now(), cliente, telefono, concepto, monto, abonado });
+            guardarDatos();
+            renderizarVistas();
+        }
+
+        function abrirModalPago() {
+            let proveedor = prompt("Nombre del proveedor / acreedor:");
+            if(!proveedor) return;
+            let concepto = prompt("Concepto de la deuda:", "Materia prima");
+            let monto = parseFloat(prompt("Monto a pagar ($):", "20.00")) || 0;
+
+            datosApp.porPagar.push({ id: Date.now(), proveedor, concepto, monto, estado: 'Pendiente' });
+            guardarDatos();
+            renderizarVistas();
+        }
+
+        // Cargar vista inicial
+        renderizarVistas();
+    </script>
+</body>
+</html>
