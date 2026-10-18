@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AG MicroApps - Gestión Total</title>
-    <!-- Telegram Web App Script -->
+    <title>AG MicroApps - Gestión Total PRO</title>
+    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -17,7 +17,7 @@
                         cardBg: '#1e293b',
                         accentGreen: '#10b981',
                         accentBlue: '#3b82f6',
-                        neonGlow: '#00f2fe'
+                        accentAmber: '#f59e0b'
                     }
                 }
             }
@@ -29,276 +29,378 @@
         .tab-content.active { display: block; }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen pb-24">
 
-    <!-- Header / Branding -->
+    <!-- Header / Branding & Tasa BCV/Dólar -->
     <header class="bg-cardBg border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
         <div class="flex justify-between items-center max-w-md mx-auto">
             <div>
-                <h1 class="text-lg font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">AG MicroApps</h1>
+                <h1 class="text-lg font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">AG MicroApps PRO</h1>
                 <p id="user-info" class="text-xs text-slate-400">Sistema de Gestión Comercial</p>
             </div>
-            <div id="license-badge" class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
-                Licencia Activa
+            <!-- Campo Tasa de Cambio -->
+            <div class="flex flex-col items-end">
+                <label class="text-[10px] text-slate-400 font-semibold uppercase">Tasa $ / Bs.</label>
+                <div class="flex items-center space-x-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5 mt-0.5">
+                    <span class="text-xs font-bold text-amber-400">Bs.</span>
+                    <input type="number" id="tasa-cambio" value="60.00" step="0.1" onchange="actualizarTasa(this.value)" class="w-16 bg-transparent text-right text-xs font-bold text-white focus:outline-none">
+                </div>
             </div>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-md mx-auto p-4 space-y-6">
+    <main class="max-w-md mx-auto p-4 space-y-5">
 
-        <!-- 📊 SECCIÓN: INICIO / DASHBOARD -->
+        <!-- 📊 SECCIÓN 1: DASHBOARD -->
         <section id="tab-inicio" class="tab-content active space-y-4">
-            <h2 class="text-xl font-bold text-slate-100">Resumen Financiero 📈</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-100">Resumen Financiero 📈</h2>
+                <span id="fecha-hoy" class="text-xs text-slate-400 font-medium"></span>
+            </div>
             
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-cardBg p-4 rounded-xl border border-slate-700 shadow">
+                <div class="bg-cardBg p-3.5 rounded-xl border border-slate-700 shadow">
                     <p class="text-xs text-slate-400">Caja / Efectivo</p>
-                    <p id="dash-caja" class="text-xl font-bold text-emerald-400">$0.00</p>
+                    <p id="dash-caja" class="text-lg font-bold text-emerald-400">$0.00</p>
+                    <p id="dash-caja-bs" class="text-[11px] text-slate-400 font-medium">Bs. 0.00</p>
                 </div>
-                <div class="bg-cardBg p-4 rounded-xl border border-slate-700 shadow">
+                <div class="bg-cardBg p-3.5 rounded-xl border border-slate-700 shadow">
                     <p class="text-xs text-slate-400">Valor Inventario</p>
-                    <p id="dash-inventario" class="text-xl font-bold text-cyan-400">$0.00</p>
+                    <p id="dash-inventario" class="text-lg font-bold text-cyan-400">$0.00</p>
+                    <p id="dash-inventario-bs" class="text-[11px] text-slate-400 font-medium">Bs. 0.00</p>
                 </div>
-                <div class="bg-cardBg p-4 rounded-xl border border-slate-700 shadow">
-                    <p class="text-xs text-slate-400">Por Cobrar (Fiados)</p>
-                    <p id="dash-cobrar" class="text-xl font-bold text-amber-400">$0.00</p>
+                <div class="bg-cardBg p-3.5 rounded-xl border border-slate-700 shadow">
+                    <p class="text-xs text-slate-400">Por Cobrar (Fiado)</p>
+                    <p id="dash-cobrar" class="text-lg font-bold text-amber-400">$0.00</p>
+                    <p id="dash-cobrar-bs" class="text-[11px] text-slate-400 font-medium">Bs. 0.00</p>
                 </div>
-                <div class="bg-cardBg p-4 rounded-xl border border-slate-700 shadow">
+                <div class="bg-cardBg p-3.5 rounded-xl border border-slate-700 shadow">
                     <p class="text-xs text-slate-400">Por Pagar (Deudas)</p>
-                    <p id="dash-pagar" class="text-xl font-bold text-rose-400">$0.00</p>
+                    <p id="dash-pagar" class="text-lg font-bold text-rose-400">$0.00</p>
+                    <p id="dash-pagar-bs" class="text-[11px] text-slate-400 font-medium">Bs. 0.00</p>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-5 rounded-xl border border-slate-700 shadow-lg text-center">
+            <!-- Balance Neto -->
+            <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700 shadow-lg text-center">
                 <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Balance Neto Real</p>
-                <p id="dash-balance" class="text-3xl font-black text-white mt-1">$0.00</p>
+                <p id="dash-balance" class="text-2xl font-black text-white mt-1">$0.00</p>
+                <p id="dash-balance-bs" class="text-xs text-cyan-400 font-bold mt-0.5">Bs. 0.00</p>
             </div>
         </section>
 
-        <!-- 📦 SECCIÓN: INVENTARIO -->
+        <!-- 📦 SECCIÓN 2: INVENTARIO -->
         <section id="tab-inventario" class="tab-content space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-bold text-slate-100">Control de Inventario</h2>
-                <button onclick="abrirModalProducto()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm transition">
+                <button onclick="abrirModalProducto()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition">
                     + Nuevo Producto
                 </button>
             </div>
 
+            <!-- Buscador -->
+            <input type="text" id="buscar-inventario" onkeyup="renderizarVistas()" placeholder="🔍 Buscar producto..." class="w-full bg-cardBg border border-slate-700 rounded-lg p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+
             <div id="lista-inventario" class="space-y-3">
-                <!-- Se llena dinámicamente -->
+                <!-- Se genera dinámicamente -->
             </div>
         </section>
 
-        <!-- 💵 SECCIÓN: CUENTAS POR COBRAR -->
+        <!-- 💵 SECCIÓN 3: CUENTAS POR COBRAR -->
         <section id="tab-cobrar" class="tab-content space-y-4">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold text-slate-100">Cuentas por Cobrar (Fiados)</h2>
-                <button onclick="abrirModalCobro()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm transition">
+                <h2 class="text-xl font-bold text-slate-100">Cuentas por Cobrar</h2>
+                <button onclick="abrirModalCobro()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition">
                     + Registrar Fiado
                 </button>
             </div>
 
+            <!-- Buscador -->
+            <input type="text" id="buscar-cobrar" onkeyup="renderizarVistas()" placeholder="🔍 Buscar cliente..." class="w-full bg-cardBg border border-slate-700 rounded-lg p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+
             <div id="lista-cobrar" class="space-y-3">
-                <!-- Se llena dinámicamente -->
+                <!-- Se genera dinámicamente -->
             </div>
         </section>
 
-        <!-- 💸 SECCIÓN: CUENTAS POR PAGAR -->
+        <!-- 💸 SECCIÓN 4: CUENTAS POR PAGAR -->
         <section id="tab-pagar" class="tab-content space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-bold text-slate-100">Cuentas por Pagar</h2>
-                <button onclick="abrirModalPago()" class="bg-rose-500 hover:bg-rose-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm transition">
+                <button onclick="abrirModalPago()" class="bg-rose-500 hover:bg-rose-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition">
                     + Nueva Deuda
                 </button>
             </div>
 
             <div id="lista-pagar" class="space-y-3">
-                <!-- Se llena dinámicamente -->
+                <!-- Se genera dinámicamente -->
+            </div>
+        </section>
+
+        <!-- 📜 SECCIÓN 5: KARDEX / MOVIMIENTOS -->
+        <section id="tab-historial" class="tab-content space-y-4">
+            <h2 class="text-xl font-bold text-slate-100">Historial de Movimientos 📜</h2>
+            <div id="lista-historial" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+                <!-- Se genera dinámicamente -->
             </div>
         </section>
 
     </main>
 
-    <!-- Navigation Bar (Bottom) -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-cardBg border-t border-slate-700 py-2 px-4 shadow-lg z-50">
+    <!-- Bar de Navegación Inferior -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-cardBg border-t border-slate-700 py-2 px-2 shadow-lg z-50">
         <div class="max-w-md mx-auto flex justify-around">
-            <button onclick="cambiarTab('inicio')" id="btn-inicio" class="flex flex-col items-center text-emerald-400 text-xs font-medium space-y-1">
-                <span class="text-xl">📊</span> Inicio
+            <button onclick="cambiarTab('inicio')" id="btn-inicio" class="flex flex-col items-center text-emerald-400 text-[11px] font-medium space-y-1">
+                <span class="text-lg">📊</span>
+                <span>Inicio</span>
             </button>
-            <button onclick="cambiarTab('inventario')" id="btn-inventario" class="flex flex-col items-center text-slate-400 text-xs font-medium space-y-1">
-                <span class="text-xl">📦</span> Inventario
+            <button onclick="cambiarTab('inventario')" id="btn-inventario" class="flex flex-col items-center text-slate-400 text-[11px] font-medium space-y-1">
+                <span class="text-lg">📦</span>
+                <span>Inventario</span>
             </button>
-            <button onclick="cambiarTab('cobrar')" id="btn-cobrar" class="flex flex-col items-center text-slate-400 text-xs font-medium space-y-1">
-                <span class="text-xl">💵</span> Por Cobrar
+            <button onclick="cambiarTab('cobrar')" id="btn-cobrar" class="flex flex-col items-center text-slate-400 text-[11px] font-medium space-y-1">
+                <span class="text-lg">💵</span>
+                <span>Por Cobrar</span>
             </button>
-            <button onclick="cambiarTab('pagar')" id="btn-pagar" class="flex flex-col items-center text-slate-400 text-xs font-medium space-y-1">
-                <span class="text-xl">💸</span> Por Pagar
+            <button onclick="cambiarTab('pagar')" id="btn-pagar" class="flex flex-col items-center text-slate-400 text-[11px] font-medium space-y-1">
+                <span class="text-lg">💸</span>
+                <span>Por Pagar</span>
+            </button>
+            <button onclick="cambiarTab('historial')" id="btn-historial" class="flex flex-col items-center text-slate-400 text-[11px] font-medium space-y-1">
+                <span class="text-lg">📜</span>
+                <span>Historial</span>
             </button>
         </div>
     </nav>
 
-    <!-- Scripts de Lógica y Control -->
+    <!-- JavaScript Lógica -->
     <script>
-        // Inicializar Telegram WebApp
         let tg = window.Telegram.WebApp;
         tg.expand();
 
         let usuarioId = tg.initDataUnsafe?.user?.id || 'demo_user';
         let nombreUsuario = tg.initDataUnsafe?.user?.first_name || 'Emprendedor';
         document.getElementById('user-info').innerText = `Hola, ${nombreUsuario}`;
+        document.getElementById('fecha-hoy').innerText = new Date().toLocaleDateString('es-VE');
 
-        // Base de datos local (Simulada, lista para conectar con Supabase)
+        // Datos en LocalStorage
         let datosApp = JSON.parse(localStorage.getItem(`ag_microapps_${usuarioId}`)) || {
+            tasa: 60.00,
+            caja: 100.00,
             inventario: [
-                { id: 1, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
-                { id: 2, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
+                { id: 1, nombre: 'Franela Sublimada Custom', stock: 12, costo: 3.50, precio: 8.00 },
+                { id: 2, nombre: 'Taza Personalizada 11oz', stock: 5, costo: 1.80, precio: 5.00 }
             ],
             porCobrar: [
-                { id: 1, cliente: 'Carlos Pérez', telefono: '584240000000', concepto: '2 Franelas', monto: 14.00, abonado: 4.00 }
+                { id: 1, cliente: 'María Rodríguez', telefono: '584240000000', concepto: '2 Tazas Personalizadas', monto: 10.00, abonado: 3.00 }
             ],
             porPagar: [
-                { id: 1, proveedor: 'Insumos Textil C.A.', concepto: 'Rollo de Tela', monto: 45.00, estado: 'Pendiente' }
+                { id: 1, proveedor: 'Insumos Bolívar', concepto: 'Tinta de Sublimación', monto: 25.00, estado: 'Pendiente' }
             ],
-            caja: 120.00
+            historial: [
+                { fecha: new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'}), desc: 'Sistema iniciado correctamente.' }
+            ]
         };
+
+        // Cargar tasa guardada
+        document.getElementById('tasa-cambio').value = datosApp.tasa || 60.00;
 
         function guardarDatos() {
             localStorage.setItem(`ag_microapps_${usuarioId}`, JSON.stringify(datosApp));
             actualizarDashboard();
         }
 
-        // Navegación por pestañas
+        function registrarHistorial(descripcion) {
+            let hora = new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'});
+            datosApp.historial.unshift({ fecha: hora, desc: descripcion });
+            if(datosApp.historial.length > 50) datosApp.historial.pop();
+            guardarDatos();
+        }
+
+        function actualizarTasa(nuevaTasa) {
+            datosApp.tasa = parseFloat(nuevaTasa) || 1;
+            guardarDatos();
+            renderizarVistas();
+        }
+
         function cambiarTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(el => el.className = "flex flex-col items-center text-slate-400 text-xs font-medium space-y-1");
+            document.querySelectorAll('nav button').forEach(el => el.className = "flex flex-col items-center text-slate-400 text-[11px] font-medium space-y-1");
 
             document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`btn-${tab}`).className = "flex flex-col items-center text-emerald-400 text-xs font-medium space-y-1";
+            document.getElementById(`btn-${tab}`).className = "flex flex-col items-center text-emerald-400 text-[11px] font-medium space-y-1";
 
             renderizarVistas();
         }
 
-        // Renderizar Información en Pantalla
         function actualizarDashboard() {
+            let tasa = datosApp.tasa;
             let totalInventario = datosApp.inventario.reduce((acc, item) => acc + (item.stock * item.costo), 0);
             let totalCobrar = datosApp.porCobrar.reduce((acc, item) => acc + (item.monto - item.abonado), 0);
             let totalPagar = datosApp.porPagar.filter(p => p.estado === 'Pendiente').reduce((acc, item) => acc + item.monto, 0);
             let balanceNeto = (datosApp.caja + totalInventario + totalCobrar) - totalPagar;
 
+            // Valores en USD
             document.getElementById('dash-caja').innerText = `$${datosApp.caja.toFixed(2)}`;
             document.getElementById('dash-inventario').innerText = `$${totalInventario.toFixed(2)}`;
             document.getElementById('dash-cobrar').innerText = `$${totalCobrar.toFixed(2)}`;
             document.getElementById('dash-pagar').innerText = `$${totalPagar.toFixed(2)}`;
             document.getElementById('dash-balance').innerText = `$${balanceNeto.toFixed(2)}`;
+
+            // Conversión a Bolívares
+            document.getElementById('dash-caja-bs').innerText = `Bs. ${(datosApp.caja * tasa).toFixed(2)}`;
+            document.getElementById('dash-inventario-bs').innerText = `Bs. ${(totalInventario * tasa).toFixed(2)}`;
+            document.getElementById('dash-cobrar-bs').innerText = `Bs. ${(totalCobrar * tasa).toFixed(2)}`;
+            document.getElementById('dash-pagar-bs').innerText = `Bs. ${(totalPagar * tasa).toFixed(2)}`;
+            document.getElementById('dash-balance-bs').innerText = `Bs. ${(balanceNeto * tasa).toFixed(2)}`;
         }
 
         function renderizarVistas() {
             actualizarDashboard();
+            let tasa = datosApp.tasa;
 
-            // Renderizar Inventario
+            // Render Inventario
+            let filtroInv = document.getElementById('buscar-inventario').value.toLowerCase();
             let htmlInv = '';
-            datosApp.inventario.forEach(item => {
+            datosApp.inventario.filter(p => p.nombre.toLowerCase().includes(filtroInv)).forEach(item => {
                 let stockAlerta = item.stock <= 3 ? 'border-rose-500 bg-rose-500/10' : 'border-slate-700 bg-cardBg';
+                let precioBs = (item.precio * tasa).toFixed(2);
                 htmlInv += `
                     <div class="p-3 rounded-xl border ${stockAlerta} flex justify-between items-center shadow">
                         <div>
-                            <h3 class="font-bold text-sm text-slate-100">${item.nombre}</h3>
-                            <p class="text-xs text-slate-400">Stock: <span class="font-bold text-white">${item.stock}</span> | Costo: $${item.costo} | Venta: $${item.precio}</p>
+                            <h3 class="font-bold text-xs text-slate-100">${item.nombre}</h3>
+                            <p class="text-[11px] text-slate-400">Stock: <span class="font-bold text-white">${item.stock}</span> | Costo: $${item.costo.toFixed(2)}</p>
+                            <p class="text-xs font-semibold text-emerald-400 mt-0.5">$${item.precio.toFixed(2)} <span class="text-[10px] text-slate-400">(Bs. ${precioBs})</span></p>
                         </div>
-                        <div class="flex space-x-2">
-                            <button onclick="modificarStock(${item.id}, 1)" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-xs font-bold">+</button>
-                            <button onclick="modificarStock(${item.id}, -1)" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-xs font-bold">-</button>
+                        <div class="flex space-x-1.5">
+                            <button onclick="modificarStock(${item.id}, 1)" class="bg-slate-700 hover:bg-slate-600 text-emerald-400 px-2.5 py-1 rounded-lg text-xs font-bold">+</button>
+                            <button onclick="modificarStock(${item.id}, -1)" class="bg-slate-700 hover:bg-slate-600 text-rose-400 px-2.5 py-1 rounded-lg text-xs font-bold">-</button>
                         </div>
                     </div>
                 `;
             });
             document.getElementById('lista-inventario').innerHTML = htmlInv || '<p class="text-xs text-slate-400 text-center py-4">No hay productos registrados.</p>';
 
-            // Renderizar Cuentas por Cobrar
+            // Render Por Cobrar
+            let filtroCobrar = document.getElementById('buscar-cobrar').value.toLowerCase();
             let htmlCobrar = '';
-            datosApp.porCobrar.forEach(item => {
+            datosApp.porCobrar.filter(c => c.cliente.toLowerCase().includes(filtroCobrar)).forEach(item => {
                 let pendiente = item.monto - item.abonado;
-                let mensajeWp = encodeURIComponent(`Hola ${item.cliente}, te escribimos de AG MicroApps para recordarte tu saldo pendiente de $${pendiente.toFixed(2)}. ¡Gracias por tu preferencia!`);
+                let pendienteBs = (pendiente * tasa).toFixed(2);
+                let mensajeWp = encodeURIComponent(`Hola ${item.cliente}, te saludamos de AG MicroApps. Te enviamos el resumen de tu cuenta pendiente:\n\n📌 Concepto: ${item.concepto}\n💵 Saldo Restante: $${pendiente.toFixed(2)} (Bs. ${pendienteBs} a la tasa de Bs. ${tasa})\n\n¡Muchas gracias por tu confianza!`);
+
                 htmlCobrar += `
-                    <div class="p-3 rounded-xl border border-slate-700 bg-cardBg space-y-2 shadow">
-                        <div class="flex justify-between">
-                            <h3 class="font-bold text-sm text-slate-100">${item.cliente}</h3>
-                            <span class="text-xs font-bold text-amber-400">Pendiente: $${pendiente.toFixed(2)}</span>
+                    <div class="p-3.5 rounded-xl border border-slate-700 bg-cardBg space-y-2 shadow">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-xs text-slate-100">${item.cliente}</h3>
+                            <span class="text-xs font-bold text-amber-400">$${pendiente.toFixed(2)} <span class="text-[10px] text-slate-400">(Bs. ${pendienteBs})</span></span>
                         </div>
-                        <p class="text-xs text-slate-400">Concepto: ${item.concepto} (Total: $${item.monto} - Abonado: $${item.abonado})</p>
+                        <p class="text-[11px] text-slate-400">Concepto: ${item.concepto} (Total: $${item.monto} - Abonado: $${item.abonado})</p>
                         <div class="flex justify-end space-x-2 pt-1">
-                            <a href="https://wa.me/${item.telefono}?text=${mensajeWp}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-semibold">📲 Cobrar por WhatsApp</a>
+                            <button onclick="abonarDeuda(${item.id})" class="bg-slate-700 hover:bg-slate-600 text-amber-400 px-2.5 py-1 rounded-lg text-xs font-semibold">+ Abonar</button>
+                            <a href="https://wa.me/${item.telefono}?text=${mensajeWp}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg text-xs font-semibold">📲 Cobrar WP</a>
                         </div>
                     </div>
                 `;
             });
-            document.getElementById('lista-cobrar').innerHTML = htmlCobrar || '<p class="text-xs text-slate-400 text-center py-4">No hay cuentas por cobrar.</p>';
+            document.getElementById('lista-cobrar').innerHTML = htmlCobrar || '<p class="text-xs text-slate-400 text-center py-4">No hay deudas por cobrar.</p>';
 
-            // Renderizar Cuentas por Pagar
+            // Render Por Pagar
             let htmlPagar = '';
             datosApp.porPagar.forEach(item => {
+                let montoBs = (item.monto * tasa).toFixed(2);
                 htmlPagar += `
-                    <div class="p-3 rounded-xl border border-slate-700 bg-cardBg space-y-1 shadow">
-                        <div class="flex justify-between">
-                            <h3 class="font-bold text-sm text-slate-100">${item.proveedor}</h3>
-                            <span class="text-xs font-bold text-rose-400">$${item.monto.toFixed(2)}</span>
+                    <div class="p-3 rounded-xl border border-slate-700 bg-cardBg flex justify-between items-center shadow">
+                        <div>
+                            <h3 class="font-bold text-xs text-slate-100">${item.proveedor}</h3>
+                            <p class="text-[11px] text-slate-400">Concepto: ${item.concepto}</p>
                         </div>
-                        <p class="text-xs text-slate-400">Concepto: ${item.concepto}</p>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-rose-400">$${item.monto.toFixed(2)}</span>
+                            <p class="text-[10px] text-slate-400">Bs. ${montoBs}</p>
+                        </div>
                     </div>
                 `;
             });
-            document.getElementById('lista-pagar').innerHTML = htmlPagar || '<p class="text-xs text-slate-400 text-center py-4">No hay cuentas por pagar.</p>';
+            document.getElementById('lista-pagar').innerHTML = htmlPagar || '<p class="text-xs text-slate-400 text-center py-4">No hay cuentas pendientes con proveedores.</p>';
+
+            // Render Historial
+            let htmlHistorial = '';
+            datosApp.historial.forEach(h => {
+                htmlHistorial += `
+                    <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50 flex justify-between text-xs">
+                        <span class="text-slate-300">${h.desc}</span>
+                        <span class="text-slate-500 font-mono text-[10px]">${h.fecha}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('lista-historial').innerHTML = htmlHistorial;
         }
 
-        // Acciones rápidas
+        // Funciones Operativas
         function modificarStock(id, cantidad) {
             let prod = datosApp.inventario.find(p => p.id === id);
             if(prod) {
                 prod.stock += cantidad;
                 if(prod.stock < 0) prod.stock = 0;
-                guardarDatos();
+                let accion = cantidad > 0 ? 'Entrada' : 'Salida';
+                registrarHistorial(`${accion} de stock: ${prod.nombre} (Stock actual: ${prod.stock})`);
                 renderizarVistas();
             }
         }
 
         function abrirModalProducto() {
-            let nombre = prompt("Nombre del producto o materia prima:");
+            let nombre = prompt("Nombre del producto o insumo:");
             if(!nombre) return;
-            let stock = parseInt(prompt("Cantidad inicial en stock:", "10")) || 0;
+            let stock = parseInt(prompt("Cantidad inicial en inventario:", "10")) || 0;
             let costo = parseFloat(prompt("Costo unitario ($):", "2.00")) || 0;
             let precio = parseFloat(prompt("Precio de venta ($):", "5.00")) || 0;
 
             datosApp.inventario.push({ id: Date.now(), nombre, stock, costo, precio });
-            guardarDatos();
+            registrarHistorial(`Nuevo producto creado: ${nombre}`);
             renderizarVistas();
         }
 
         function abrirModalCobro() {
             let cliente = prompt("Nombre del cliente:");
             if(!cliente) return;
-            let telefono = prompt("Teléfono con código de país (ej: 584249090289):", "58424");
-            let concepto = prompt("Concepto de la venta:", "Productos sublimados");
+            let telefono = prompt("Teléfono del cliente (ej: 584249090289):", "58424");
+            let concepto = prompt("Concepto de la venta:", "Mercancía / Servicio");
             let monto = parseFloat(prompt("Monto total ($):", "10.00")) || 0;
-            let abonado = parseFloat(prompt("¿Cuánto abonó de inicial? ($):", "0")) || 0;
+            let abonado = parseFloat(prompt("Abono inicial ($):", "0")) || 0;
 
             datosApp.porCobrar.push({ id: Date.now(), cliente, telefono, concepto, monto, abonado });
-            guardarDatos();
+            datosApp.caja += abonado;
+            registrarHistorial(`Fiado registrado a ${cliente} por $${monto} (Abonó $${abonado})`);
             renderizarVistas();
+        }
+
+        function abonarDeuda(id) {
+            let cuenta = datosApp.porCobrar.find(c => c.id === id);
+            if(cuenta) {
+                let pendiente = cuenta.monto - cuenta.abonado;
+                let abono = parseFloat(prompt(`Ingresa el monto del abono para ${cuenta.cliente} (Pendiente: $${pendiente.toFixed(2)}):`, "5.00")) || 0;
+                if(abono > 0) {
+                    cuenta.abonado += abono;
+                    datosApp.caja += abono;
+                    registrarHistorial(`Abono de $${abono} recibido de ${cuenta.cliente}`);
+                    renderizarVistas();
+                }
+            }
         }
 
         function abrirModalPago() {
-            let proveedor = prompt("Nombre del proveedor / acreedor:");
+            let proveedor = prompt("Nombre del proveedor:");
             if(!proveedor) return;
-            let concepto = prompt("Concepto de la deuda:", "Materia prima");
-            let monto = parseFloat(prompt("Monto a pagar ($):", "20.00")) || 0;
+            let concepto = prompt("Concepto del compromiso:", "Materia prima / Servicio");
+            let monto = parseFloat(prompt("Monto pendiente ($):", "20.00")) || 0;
 
             datosApp.porPagar.push({ id: Date.now(), proveedor, concepto, monto, estado: 'Pendiente' });
-            guardarDatos();
+            registrarHistorial(`Deuda registrada con proveedor ${proveedor} por $${monto}`);
             renderizarVistas();
         }
 
-        // Cargar vista inicial
         renderizarVistas();
     </script>
 </body>
