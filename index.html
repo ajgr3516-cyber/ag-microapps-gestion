@@ -138,7 +138,7 @@
             </div>
         </section>
 
-        <!-- 📜 SECCIÓN 5: KARDEX / MOVIMIENTOS -->
+        <!-- 📜 SECCIÓN 5: HISTORIAL DE MOVIMIENTOS -->
         <section id="tab-historial" class="tab-content space-y-4">
             <h2 class="text-xl font-bold text-slate-100">Historial de Movimientos 📜</h2>
             <div id="lista-historial" class="space-y-2 max-h-96 overflow-y-auto pr-1">
@@ -189,8 +189,8 @@
             tasa: 60.00,
             caja: 100.00,
             inventario: [
-                { id: 1, nombre: 'Franela Sublimada Custom', stock: 12, costo: 3.50, precio: 8.00 },
-                { id: 2, nombre: 'Taza Personalizada 11oz', stock: 5, costo: 1.80, precio: 5.00 }
+                { id: 1, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
+                { id: 2, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
             ],
             porCobrar: [
                 { id: 1, cliente: 'María Rodríguez', telefono: '584240000000', concepto: '2 Tazas Personalizadas', monto: 10.00, abonado: 3.00 }
@@ -203,7 +203,6 @@
             ]
         };
 
-        // Cargar tasa guardada
         document.getElementById('tasa-cambio').value = datosApp.tasa || 60.00;
 
         function guardarDatos() {
@@ -260,27 +259,28 @@
             actualizarDashboard();
             let tasa = datosApp.tasa;
 
-            // Render Inventario
+            // Render Inventario Limpio con Eliminar y Editar Stock
             let filtroInv = document.getElementById('buscar-inventario').value.toLowerCase();
             let htmlInv = '';
             datosApp.inventario.filter(p => p.nombre.toLowerCase().includes(filtroInv)).forEach(item => {
-                let stockAlerta = item.stock <= 3 ? 'border-rose-500 bg-rose-500/10' : 'border-slate-700 bg-cardBg';
+                let stockAlerta = item.stock <= 3 ? 'border-rose-500/80 bg-rose-500/10' : 'border-slate-700 bg-cardBg';
                 let precioBs = (item.precio * tasa).toFixed(2);
                 htmlInv += `
-                    <div class="p-3 rounded-xl border ${stockAlerta} flex justify-between items-center shadow">
-                        <div>
+                    <div class="p-3.5 rounded-xl border ${stockAlerta} flex justify-between items-center shadow">
+                        <div class="space-y-1">
                             <h3 class="font-bold text-xs text-slate-100">${item.nombre}</h3>
-                            <p class="text-[11px] text-slate-400">Stock: <span class="font-bold text-white">${item.stock}</span> | Costo: $${item.costo.toFixed(2)}</p>
-                            <p class="text-xs font-semibold text-emerald-400 mt-0.5">$${item.precio.toFixed(2)} <span class="text-[10px] text-slate-400">(Bs. ${precioBs})</span></p>
+                            <p class="text-[11px] text-slate-400">Stock: <button onclick="editarStockDirecto(${item.id})" class="font-bold text-white bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-xs hover:border-emerald-500">${item.stock} ✏️</button> | Costo: $${item.costo.toFixed(2)}</p>
+                            <p class="text-xs font-semibold text-emerald-400">$${item.precio.toFixed(2)} <span class="text-[10px] text-slate-400">(Bs. ${precioBs})</span></p>
                         </div>
-                        <div class="flex space-x-1.5">
-                            <button onclick="modificarStock(${item.id}, 1)" class="bg-slate-700 hover:bg-slate-600 text-emerald-400 px-2.5 py-1 rounded-lg text-xs font-bold">+</button>
-                            <button onclick="modificarStock(${item.id}, -1)" class="bg-slate-700 hover:bg-slate-600 text-rose-400 px-2.5 py-1 rounded-lg text-xs font-bold">-</button>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="eliminarProducto(${item.id})" class="bg-rose-500/20 hover:bg-rose-500 border border-rose-500/40 text-rose-400 hover:text-white p-2 rounded-lg text-xs transition" title="Eliminar producto">
+                                🗑️
+                            </button>
                         </div>
                     </div>
                 `;
             });
-            document.getElementById('lista-inventario').innerHTML = htmlInv || '<p class="text-xs text-slate-400 text-center py-4">No hay productos registrados.</p>';
+            document.getElementById('lista-inventario').innerHTML = htmlInv || '<p class="text-xs text-slate-400 text-center py-4">No hay productos en inventario.</p>';
 
             // Render Por Cobrar
             let filtroCobrar = document.getElementById('buscar-cobrar').value.toLowerCase();
@@ -300,6 +300,7 @@
                         <div class="flex justify-end space-x-2 pt-1">
                             <button onclick="abonarDeuda(${item.id})" class="bg-slate-700 hover:bg-slate-600 text-amber-400 px-2.5 py-1 rounded-lg text-xs font-semibold">+ Abonar</button>
                             <a href="https://wa.me/${item.telefono}?text=${mensajeWp}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg text-xs font-semibold">📲 Cobrar WP</a>
+                            <button onclick="eliminarCobro(${item.id})" class="bg-rose-500/20 text-rose-400 px-2 py-1 rounded-lg text-xs">🗑️</button>
                         </div>
                     </div>
                 `;
@@ -316,9 +317,12 @@
                             <h3 class="font-bold text-xs text-slate-100">${item.proveedor}</h3>
                             <p class="text-[11px] text-slate-400">Concepto: ${item.concepto}</p>
                         </div>
-                        <div class="text-right">
-                            <span class="text-xs font-bold text-rose-400">$${item.monto.toFixed(2)}</span>
-                            <p class="text-[10px] text-slate-400">Bs. ${montoBs}</p>
+                        <div class="flex items-center space-x-3">
+                            <div class="text-right">
+                                <span class="text-xs font-bold text-rose-400">$${item.monto.toFixed(2)}</span>
+                                <p class="text-[10px] text-slate-400">Bs. ${montoBs}</p>
+                            </div>
+                            <button onclick="eliminarPago(${item.id})" class="bg-rose-500/20 text-rose-400 px-2 py-1 rounded-lg text-xs">🗑️</button>
                         </div>
                     </div>
                 `;
@@ -338,27 +342,38 @@
             document.getElementById('lista-historial').innerHTML = htmlHistorial;
         }
 
-        // Funciones Operativas
-        function modificarStock(id, cantidad) {
+        // Acciones de Productos
+        function editarStockDirecto(id) {
             let prod = datosApp.inventario.find(p => p.id === id);
             if(prod) {
-                prod.stock += cantidad;
-                if(prod.stock < 0) prod.stock = 0;
-                let accion = cantidad > 0 ? 'Entrada' : 'Salida';
-                registrarHistorial(`${accion} de stock: ${prod.nombre} (Stock actual: ${prod.stock})`);
+                let nuevoStock = prompt(`Actualizar stock para "${prod.nombre}":`, prod.stock);
+                if(nuevoStock !== null) {
+                    let cant = parseInt(nuevoStock) || 0;
+                    prod.stock = cant < 0 ? 0 : cant;
+                    registrarHistorial(`Stock actualizado: ${prod.nombre} a ${prod.stock} unidades`);
+                    renderizarVistas();
+                }
+            }
+        }
+
+        function eliminarProducto(id) {
+            let prod = datosApp.inventario.find(p => p.id === id);
+            if(prod && confirm(`¿Estás seguro de eliminar "${prod.nombre}" del inventario?`)) {
+                datosApp.inventario = datosApp.inventario.filter(p => p.id !== id);
+                registrarHistorial(`Producto eliminado: ${prod.nombre}`);
                 renderizarVistas();
             }
         }
 
         function abrirModalProducto() {
-            let nombre = prompt("Nombre del producto o insumo:");
+            let nombre = prompt("Nombre del producto:");
             if(!nombre) return;
-            let stock = parseInt(prompt("Cantidad inicial en inventario:", "10")) || 0;
+            let stock = parseInt(prompt("Cantidad en inventario:", "10")) || 0;
             let costo = parseFloat(prompt("Costo unitario ($):", "2.00")) || 0;
             let precio = parseFloat(prompt("Precio de venta ($):", "5.00")) || 0;
 
             datosApp.inventario.push({ id: Date.now(), nombre, stock, costo, precio });
-            registrarHistorial(`Nuevo producto creado: ${nombre}`);
+            registrarHistorial(`Nuevo producto agregado: ${nombre}`);
             renderizarVistas();
         }
 
@@ -372,7 +387,7 @@
 
             datosApp.porCobrar.push({ id: Date.now(), cliente, telefono, concepto, monto, abonado });
             datosApp.caja += abonado;
-            registrarHistorial(`Fiado registrado a ${cliente} por $${monto} (Abonó $${abonado})`);
+            registrarHistorial(`Fiado a ${cliente} por $${monto} (Abonó $${abonado})`);
             renderizarVistas();
         }
 
@@ -380,7 +395,7 @@
             let cuenta = datosApp.porCobrar.find(c => c.id === id);
             if(cuenta) {
                 let pendiente = cuenta.monto - cuenta.abonado;
-                let abono = parseFloat(prompt(`Ingresa el monto del abono para ${cuenta.cliente} (Pendiente: $${pendiente.toFixed(2)}):`, "5.00")) || 0;
+                let abono = parseFloat(prompt(`Abono para ${cuenta.cliente} (Pendiente: $${pendiente.toFixed(2)}):`, "5.00")) || 0;
                 if(abono > 0) {
                     cuenta.abonado += abono;
                     datosApp.caja += abono;
@@ -390,15 +405,31 @@
             }
         }
 
+        function eliminarCobro(id) {
+            if(confirm("¿Eliminar este registro de cuenta por cobrar?")) {
+                datosApp.porCobrar = datosApp.porCobrar.filter(c => c.id !== id);
+                registrarHistorial("Registro de cuenta por cobrar eliminado");
+                renderizarVistas();
+            }
+        }
+
         function abrirModalPago() {
             let proveedor = prompt("Nombre del proveedor:");
             if(!proveedor) return;
-            let concepto = prompt("Concepto del compromiso:", "Materia prima / Servicio");
+            let concepto = prompt("Concepto del compromiso:", "Materia prima");
             let monto = parseFloat(prompt("Monto pendiente ($):", "20.00")) || 0;
 
             datosApp.porPagar.push({ id: Date.now(), proveedor, concepto, monto, estado: 'Pendiente' });
-            registrarHistorial(`Deuda registrada con proveedor ${proveedor} por $${monto}`);
+            registrarHistorial(`Deuda con proveedor ${proveedor} por $${monto}`);
             renderizarVistas();
+        }
+
+        function eliminarPago(id) {
+            if(confirm("¿Eliminar este registro de cuenta por pagar?")) {
+                datosApp.porPagar = datosApp.porPagar.filter(p => p.id !== id);
+                registrarHistorial("Registro de deuda a proveedor eliminado");
+                renderizarVistas();
+            }
         }
 
         renderizarVistas();
