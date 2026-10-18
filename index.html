@@ -43,7 +43,7 @@
                 <label class="text-[10px] text-slate-400 font-semibold uppercase">Tasa $ / Bs.</label>
                 <div class="flex items-center space-x-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5 mt-0.5">
                     <span class="text-xs font-bold text-amber-400">Bs.</span>
-                    <input type="number" id="tasa-cambio" value="890.00" step="0.1" onchange="actualizarTasa(this.value)" class="w-16 bg-transparent text-right text-xs font-bold text-white focus:outline-none">
+                    <input type="number" id="tasa-cambio" value="1000.00" step="0.1" onchange="actualizarTasa(this.value)" class="w-20 bg-transparent text-right text-xs font-bold text-white focus:outline-none">
                 </div>
             </div>
         </div>
@@ -186,12 +186,10 @@
 
         // Datos en LocalStorage
         let datosApp = JSON.parse(localStorage.getItem(`ag_microapps_${usuarioId}`)) || {
-            tasa: 890.00,
+            tasa: 1000.00,
             caja: 100.00,
             inventario: [
-                { id: 1, nombre: 'Cloro', stock: 100, costo: 1.00, precio: 1.50 },
-                { id: 2, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
-                { id: 3, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
+                { id: 1, nombre: 'Cloro', stock: 100, costo: 1.00, precio: 1.30 }
             ],
             porCobrar: [
                 { id: 1, cliente: 'María Rodríguez', telefono: '584240000000', concepto: '2 Tazas Personalizadas', monto: 10.00, abonado: 3.00 }
@@ -204,7 +202,7 @@
             ]
         };
 
-        document.getElementById('tasa-cambio').value = datosApp.tasa || 890.00;
+        document.getElementById('tasa-cambio').value = datosApp.tasa || 1000.00;
 
         function guardarDatos() {
             localStorage.setItem(`ag_microapps_${usuarioId}`, JSON.stringify(datosApp));
@@ -249,18 +247,18 @@
             document.getElementById('dash-balance').innerText = `$${balanceNeto.toFixed(2)}`;
 
             // Conversión a Bolívares
-            document.getElementById('dash-caja-bs').innerText = `Bs. ${(datosApp.caja * tasa).toFixed(2)}`;
-            document.getElementById('dash-inventario-bs').innerText = `Bs. ${(totalInventario * tasa).toFixed(2)}`;
-            document.getElementById('dash-cobrar-bs').innerText = `Bs. ${(totalCobrar * tasa).toFixed(2)}`;
-            document.getElementById('dash-pagar-bs').innerText = `Bs. ${(totalPagar * tasa).toFixed(2)}`;
-            document.getElementById('dash-balance-bs').innerText = `Bs. ${(balanceNeto * tasa).toFixed(2)}`;
+            document.getElementById('dash-caja-bs').innerText = `Bs. ${(datosApp.caja * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('dash-inventario-bs').innerText = `Bs. ${(totalInventario * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('dash-cobrar-bs').innerText = `Bs. ${(totalCobrar * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('dash-pagar-bs').innerText = `Bs. ${(totalPagar * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('dash-balance-bs').innerText = `Bs. ${(balanceNeto * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
         }
 
         function renderizarVistas() {
             actualizarDashboard();
             let tasa = datosApp.tasa;
 
-            // Render Inventario con Inversión, Venta Total y Ganancia Est.
+            // Render Inventario
             let filtroInv = document.getElementById('buscar-inventario').value.toLowerCase();
             let htmlInv = '';
             datosApp.inventario.filter(p => p.nombre.toLowerCase().includes(filtroInv)).forEach(item => {
@@ -269,17 +267,20 @@
                 let inversionTotal = item.stock * item.costo;
                 let ventaTotal = item.stock * item.precio;
                 let gananciaProyectada = ventaTotal - inversionTotal;
-                let precioBs = (item.precio * tasa).toFixed(2);
-                let gananciaBs = (gananciaProyectada * tasa).toFixed(2);
+                
+                let precioUnidadBs = (item.precio * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2});
+                let ventaTotalBs = (ventaTotal * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2});
+                let inversionTotalBs = (inversionTotal * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2});
+                let gananciaBs = (gananciaProyectada * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2});
 
                 htmlInv += `
-                    <div class="p-3.5 rounded-xl border ${stockAlerta} space-y-2 shadow">
+                    <div class="p-3.5 rounded-xl border ${stockAlerta} space-y-2.5 shadow">
                         <div class="flex justify-between items-start">
                             <div>
                                 <h3 class="font-bold text-sm text-slate-100">${item.nombre}</h3>
                                 <p class="text-[11px] text-slate-400 mt-0.5">
                                     Stock: <button onclick="editarStockDirecto(${item.id})" class="font-bold text-white bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-xs hover:border-emerald-500">${item.stock} ✏️</button> 
-                                    | Costo Un.: <span class="text-slate-300 font-medium">$${item.costo.toFixed(2)}</span>
+                                    | Precio Un.: <span class="text-emerald-400 font-bold">$${item.precio.toFixed(2)}</span> <span class="text-[10px] text-slate-400">(Bs. ${precioUnidadBs})</span>
                                 </p>
                             </div>
                             <button onclick="eliminarProducto(${item.id})" class="bg-rose-500/20 hover:bg-rose-500 border border-rose-500/40 text-rose-400 hover:text-white p-1.5 rounded-lg text-xs transition" title="Eliminar producto">
@@ -288,19 +289,24 @@
                         </div>
 
                         <div class="pt-2 border-t border-slate-700/60 grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                                <p class="text-[10px] text-slate-400">Inversión Total:</p>
-                                <p class="font-bold text-cyan-400">$${inversionTotal.toFixed(2)}</p>
+                            <div class="bg-slate-900/40 p-2 rounded-lg border border-slate-800">
+                                <p class="text-[10px] text-slate-400 font-medium">Inversión Total (${item.stock} un.):</p>
+                                <p class="font-bold text-cyan-400 mt-0.5">$${inversionTotal.toFixed(2)}</p>
+                                <p class="text-[10px] text-slate-400">Bs. ${inversionTotalBs}</p>
                             </div>
-                            <div>
-                                <p class="text-[10px] text-slate-400">Venta Total Est.:</p>
-                                <p class="font-bold text-emerald-400">$${ventaTotal.toFixed(2)} <span class="text-[9px] text-slate-400">(Bs. ${(ventaTotal * tasa).toFixed(0)})</span></p>
+                            <div class="bg-slate-900/40 p-2 rounded-lg border border-slate-800">
+                                <p class="text-[10px] text-slate-400 font-medium">Venta Total Est.:</p>
+                                <p class="font-bold text-emerald-400 mt-0.5">$${ventaTotal.toFixed(2)}</p>
+                                <p class="text-[10px] text-slate-400">Bs. ${ventaTotalBs}</p>
                             </div>
                         </div>
 
-                        <div class="bg-slate-900/80 p-2 rounded-lg border border-emerald-500/30 flex justify-between items-center text-xs mt-1">
+                        <div class="bg-slate-900/80 p-2 rounded-lg border border-emerald-500/30 flex justify-between items-center text-xs">
                             <span class="text-emerald-400 font-semibold text-[11px]">📈 Ganancia Est.:</span>
-                            <span class="font-black text-emerald-300">$${gananciaProyectada.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal">(Bs. ${gananciaBs})</span></span>
+                            <div class="text-right">
+                                <span class="font-black text-emerald-300">$${gananciaProyectada.toFixed(2)}</span>
+                                <span class="text-[10px] text-slate-400 block">(Bs. ${gananciaBs})</span>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -312,7 +318,7 @@
             let htmlCobrar = '';
             datosApp.porCobrar.filter(c => c.cliente.toLowerCase().includes(filtroCobrar)).forEach(item => {
                 let pendiente = item.monto - item.abonado;
-                let pendienteBs = (pendiente * tasa).toFixed(2);
+                let pendienteBs = (pendiente * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2});
                 let mensajeWp = encodeURIComponent(`Hola ${item.cliente}, te saludamos de AG MicroApps. Te enviamos el resumen de tu cuenta pendiente:\n\n📌 Concepto: ${item.concepto}\n💵 Saldo Restante: $${pendiente.toFixed(2)} (Bs. ${pendienteBs} a la tasa de Bs. ${tasa})\n\n¡Muchas gracias por tu confianza!`);
 
                 htmlCobrar += `
@@ -335,7 +341,7 @@
             // Render Por Pagar
             let htmlPagar = '';
             datosApp.porPagar.forEach(item => {
-                let montoBs = (item.monto * tasa).toFixed(2);
+                let montoBs = (item.monto * tasa).toLocaleString('es-VE', {minimumFractionDigits: 2});
                 htmlPagar += `
                     <div class="p-3 rounded-xl border border-slate-700 bg-cardBg flex justify-between items-center shadow">
                         <div>
@@ -391,11 +397,11 @@
         }
 
         function abrirModalProducto() {
-            let nombre = prompt("Nombre del producto (ej: Cloro 100L):");
+            let nombre = prompt("Nombre del producto (ej: Cloro):");
             if(!nombre) return;
             let stock = parseInt(prompt("Cantidad en inventario (unidades/litros):", "100")) || 0;
             let costo = parseFloat(prompt("Costo unitario ($):", "1.00")) || 0;
-            let precio = parseFloat(prompt("Precio de venta ($):", "1.50")) || 0;
+            let precio = parseFloat(prompt("Precio de venta ($):", "1.30")) || 0;
 
             datosApp.inventario.push({ id: Date.now(), nombre, stock, costo, precio });
             registrarHistorial(`Nuevo producto agregado: ${nombre}`);
@@ -450,7 +456,7 @@
         }
 
         function eliminarPago(id) {
-            if(confirm("¿Eliminar este registro de cuenta por pagar?")) {
+            if(confirm("¿Eliminar este registro de deuda a proveedor?")) {
                 datosApp.porPagar = datosApp.porPagar.filter(p => p.id !== id);
                 registrarHistorial("Registro de deuda a proveedor eliminado");
                 renderizarVistas();
