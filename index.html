@@ -6,6 +6,8 @@
     <title>AG MicroApps - Gestión Total PRO</title>
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -30,6 +32,24 @@
     </style>
 </head>
 <body class="min-h-screen pb-24">
+
+    <!-- Pantalla de Bloqueo por Licencia Inactiva / No Registrada -->
+    <div id="bloqueo-licencia" class="fixed inset-0 bg-slate-950/95 z-[100] flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-rose-500/40 rounded-2xl p-6 text-center max-w-sm space-y-4 shadow-2xl">
+            <div class="text-4xl">🔒</div>
+            <h2 class="text-xl font-bold text-white">Licencia No Activa</h2>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Esta Mini App requiere una licencia autorizada para funcionar. Tu ID de cliente no se encuentra activo en el sistema.
+            </p>
+            <div class="bg-slate-900 border border-slate-700 p-3 rounded-xl">
+                <p class="text-[10px] text-slate-400 uppercase font-semibold">Tu ID de Telegram:</p>
+                <p id="licencia-user-id" class="text-base font-mono font-bold text-emerald-400">Cargando...</p>
+            </div>
+            <a id="btn-comprar-licencia" href="#" target="_blank" class="block w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 rounded-xl text-xs transition">
+                📲 Solicitar Activación por WhatsApp
+            </a>
+        </div>
+    </div>
 
     <!-- Header / Branding & Tasa BCV/Dólar -->
     <header class="bg-cardBg border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
@@ -195,13 +215,55 @@
 
     <!-- JavaScript Lógica -->
     <script>
+        // CONFIGURACIÓN DE SUPABASE
+        const SUPABASE_URL = 'https://qbdragckdadpoqtimtpl.supabase.co';
+        
+        // ⚠️ REEMPLAZA ESTE TEXTO CON TU Publishable Key (sb_publishable_...) DE SUPABASE
+        const SUPABASE_ANON_KEY = 'PEGA_AQUÍ_TU_PUBLISHABLE_KEY';
+        
+        const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        let usuarioId = tg.initDataUnsafe?.user?.id || 'demo_user';
+        let usuarioId = tg.initDataUnsafe?.user?.id || null;
         let nombreUsuario = tg.initDataUnsafe?.user?.first_name || 'Emprendedor';
+
         document.getElementById('user-info').innerText = `Hola, ${nombreUsuario}`;
         document.getElementById('fecha-hoy').innerText = new Date().toLocaleDateString('es-VE');
+
+        // Validar Licencia con Supabase
+        async function verificarLicencia() {
+            if(!usuarioId) {
+                // Modo desarrollo/testing si no está dentro de Telegram
+                document.getElementById('bloqueo-licencia').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('licencia-user-id').innerText = usuarioId;
+            let wpMsg = encodeURIComponent(`Hola AG MicroApps, quiero activar la licencia de mi cuenta en la app de gestión. Mi Telegram ID es: ${usuarioId}`);
+            document.getElementById('btn-comprar-licencia').href = `https://wa.me/584249090289?text=${wpMsg}`;
+
+            try {
+                let { data, error } = await clientSupabase
+                    .from('licencias')
+                    .select('*')
+                    .eq('telegram_id', usuarioId)
+                    .single();
+
+                if (data && data.activa === true) {
+                    // Licencia válida -> Desbloquear app
+                    document.getElementById('bloqueo-licencia').classList.add('hidden');
+                } else {
+                    // Licencia no registrada o inactiva -> Mantener bloqueo
+                    document.getElementById('bloqueo-licencia').classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Error al validar licencia:", err);
+            }
+        }
+
+        verificarLicencia();
 
         let hoyFechaClave = new Date().toISOString().split('T')[0];
 
@@ -225,13 +287,6 @@
                 { fecha: new Date().toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'}), desc: 'Sistema iniciado correctamente.' }
             ]
         };
-
-        if(datosApp.inventario.length === 1 && datosApp.inventario[0].nombre === 'Cloro') {
-            datosApp.inventario.push(
-                { id: 2, nombre: 'Franela Sublimada A1686G', stock: 15, costo: 3.00, precio: 7.00 },
-                { id: 3, nombre: 'Taza Personalizada', stock: 8, costo: 1.50, precio: 4.00 }
-            );
-        }
 
         if(datosApp.ultimaFechaVenta !== hoyFechaClave) {
             datosApp.ventasHoy = 0.00;
@@ -261,7 +316,6 @@
             }
         }
 
-        // Función para editar la Caja directamente
         function editarCajaDirecto() {
             let nuevoMonto = prompt("Ingresa el nuevo saldo total en Caja / Efectivo ($):", datosApp.caja);
             if(nuevoMonto !== null) {
